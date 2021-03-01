@@ -5,6 +5,7 @@ import com.asap.country_app.dto.LocationDto;
 import com.asap.country_app.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -21,12 +22,15 @@ import java.util.UUID;
 @RequestMapping("/user")
 public class UserController {
     private final UserService userService;
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    public UserController(UserService userService) {
+
+    public UserController(UserService userService, BCryptPasswordEncoder bCryptPasswordEncoder) {
         this.userService = userService;
+        this.bCryptPasswordEncoder = bCryptPasswordEncoder;
+
     }
 
-//<<<<<<< HEAD
     @GetMapping
     public AppUserDto getUser(@RequestParam UUID userId) {
         return userService.getUser(userId);
@@ -35,31 +39,8 @@ public class UserController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED) //TODO Ivan ustawic status zeby byl inny gdy blad
     public AppUserDto saveUser(@RequestBody AppUserDto appUserDto) {
+        appUserDto.setPassword(bCryptPasswordEncoder.encode(appUserDto.getPassword()));
         return userService.saveUser(appUserDto);
-//=======
-//    @CrossOrigin
-//    @PostMapping("/register")
-//    public String addUser(@RequestBody User user) {
-//        log.info("Register user email={} password={}", user.getEmail(), user.getPassword());
-//        if (userService.createUser(user)) {
-//            return "Success register for " + user.getEmail();
-//        } else {
-//            return "Failed register for " + user.getEmail();
-//        }
-//    }
-//
-//    //TODO create login for users, cookie?
-//    @PostMapping("/login")
-//    public List<User> login() {
-//        log.info("Login success");
-//        return userService.getUsers();
-//    }
-//
-//    @GetMapping("/users")
-//    public List<User> getUsers() {
-//        log.info("Requested all users");
-//        return userService.getUsers();
-//>>>>>>> master
     }
 
     //TODO change the implementation
@@ -69,7 +50,7 @@ public class UserController {
         if(userService.addLikedLocation(locationDto, userId)){
             return "liked";
         }else {
-            return "already liked";
+            return "remove like";
         }
     }
 
@@ -80,7 +61,7 @@ public class UserController {
         if(userService.addVisitedLocation(locationDto, userId)){
             return "visited";
         }else {
-            return "already visited";
+            return "remove like";
         }
     }
 
@@ -91,9 +72,19 @@ public class UserController {
         if(userService.addWantToVisitLocation(locationDto, userId)){
             return "visited";
         }else {
-            return "already wanted to visit";
+            return "remove like";
         }
     }
+
+
+
+//    @GetMapping("/orders")
+//    public String getOrders(Model model, @AuthenticationPrincipal OrderUser user) {
+//        var orders = orderFindService.findAll(user);
+//        model.addAttribute("orders", orders);
+//
+//        return "orders";
+//    }
 
 
     //TODO for future cleanup
