@@ -1,21 +1,26 @@
 package com.asap.country_app.service;
 
 import com.asap.country_app.database.errors.UserNotFoundException;
+import com.asap.country_app.database.model.AppUser;
+import com.asap.country_app.database.model.Location;
+import com.asap.country_app.database.model.UserInfo;
 import com.asap.country_app.database.repository.UserInfoRepository;
 import com.asap.country_app.database.repository.UserRepository;
-import com.asap.country_app.database.model.Location;
-import com.asap.country_app.database.model.AppUser;
-import com.asap.country_app.database.model.UserInfo;
-import com.asap.country_app.dto.LocationDto;
 import com.asap.country_app.dto.AppUserDto;
+import com.asap.country_app.dto.LocationDto;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.asap.country_app.database.Functions.LocationFunctions.locationDTOToLocation;
+import static com.asap.country_app.database.Functions.LocationFunctions.locationToLocationDTO;
 import static com.asap.country_app.database.Functions.UserFunctions.userDTOToUserCreate;
 import static com.asap.country_app.database.Functions.UserFunctions.userToUserDTO;
 import static com.asap.country_app.database.Functions.UserFunctions.userToUserDTOCreate;
@@ -23,7 +28,7 @@ import static com.asap.country_app.database.Functions.UserFunctions.userToUserDT
 
 @Service
 @Slf4j
-public class UserService {
+public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final UserInfoRepository userInfoR;
@@ -87,10 +92,10 @@ public class UserService {
     }
 
     private void changeLocationStatus(LocationDto locationDto, Location location, List<Location> list) {
-        if(location == null){
+        if (location == null) {
             location = locationDTOToLocation.apply(locationDto);
         }
-        if (list.contains(location)){
+        if (list.contains(location)) {
             list.remove(location);
             log.info("remove");
         } else {
@@ -113,8 +118,37 @@ public class UserService {
         return true;
     }
 
-
     public AppUserDto getUser(UUID userId) {
         return userToUserDTO.apply(userRepository.findById(userId).orElseThrow());
     }
+
+    public List<List<LocationDto>> getMyLocation(AppUserDto userDto) {
+
+        log.info(String.valueOf(userDto));
+
+        AppUser user = userRepository.findById(userDto.getId()).orElseThrow();
+
+        List<LocationDto> visited = user.getVisitedLocations().stream()
+                .map(locationToLocationDTO)
+                .collect(Collectors.toList());
+
+        List<LocationDto> liked = user.getLikedLocations().stream()
+                .map(locationToLocationDTO)
+                .collect(Collectors.toList());
+
+        List<LocationDto> want = user.getLocationsWantedToVisit().stream()
+                .map(locationToLocationDTO)
+                .collect(Collectors.toList());
+
+        List list = List.of(visited, liked, want);
+        log.info(list.toString());
+        return list;
+    }
+
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        return userRepository.findByEmail(email).orElseThrow();
+    }
+
 }

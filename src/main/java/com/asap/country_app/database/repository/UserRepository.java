@@ -13,4 +13,6 @@ public interface UserRepository extends JpaRepository<AppUser, UUID> {
     @Query(value = "select u from AppUser u where lower(email) = lower(:email)")
     Optional<AppUser> findByEmail(String email);
 
+
+
 }
